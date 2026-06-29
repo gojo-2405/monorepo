@@ -1,0 +1,42 @@
+{
+  "family": "ecom-cart",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::618246140803:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::618246140803:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "ecom-cart",
+      "image": "618246140803.dkr.ecr.us-east-1.amazonaws.com/ecom-cart:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3006,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "NODE_ENV",     "value": "production" },
+        { "name": "PORT",         "value": "3006" },
+        { "name": "SERVICE_NAME", "value": "cart-service" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group":         "/ecs/ecom-cluster",
+          "awslogs-region":        "us-east-1",
+          "awslogs-stream-prefix": "cart-service"
+        }
+      },
+      "healthCheck": {
+        "command":     ["CMD-SHELL", "wget -qO- http://localhost:3006/health || exit 1"],
+        "interval":    30,
+        "timeout":     5,
+        "retries":     3,
+        "startPeriod": 60
+      }
+    }
+  ]
+}

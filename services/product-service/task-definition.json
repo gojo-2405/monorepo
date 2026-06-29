@@ -1,0 +1,42 @@
+{
+  "family": "ecom-product",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::618246140803:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::618246140803:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "ecom-product",
+      "image": "618246140803.dkr.ecr.us-east-1.amazonaws.com/ecom-product:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3003,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "NODE_ENV",     "value": "production" },
+        { "name": "PORT",         "value": "3003" },
+        { "name": "SERVICE_NAME", "value": "product-service" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group":         "/ecs/ecom-cluster",
+          "awslogs-region":        "us-east-1",
+          "awslogs-stream-prefix": "product-service"
+        }
+      },
+      "healthCheck": {
+        "command":     ["CMD-SHELL", "wget -qO- http://localhost:3003/health || exit 1"],
+        "interval":    30,
+        "timeout":     5,
+        "retries":     3,
+        "startPeriod": 60
+      }
+    }
+  ]
+}

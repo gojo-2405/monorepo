@@ -1,0 +1,2 @@
+{"name": "product-service","version": "1.0.0","main": "src/index.js","scripts": {"start": "node src/index.js","dev": "nodemon src/index.js","test": "echo \"No tests yet\"","build": "echo \"Build product-service\""},"dependencies": {"express": "*",
+    "mongoose": "*"}}

@@ -1,0 +1,42 @@
+{
+  "family": "ecom-notification",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::618246140803:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::618246140803:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "ecom-notification",
+      "image": "618246140803.dkr.ecr.us-east-1.amazonaws.com/ecom-notification:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3007,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "NODE_ENV",     "value": "production" },
+        { "name": "PORT",         "value": "3007" },
+        { "name": "SERVICE_NAME", "value": "notification-service" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group":         "/ecs/ecom-cluster",
+          "awslogs-region":        "us-east-1",
+          "awslogs-stream-prefix": "notification-service"
+        }
+      },
+      "healthCheck": {
+        "command":     ["CMD-SHELL", "wget -qO- http://localhost:3007/health || exit 1"],
+        "interval":    30,
+        "timeout":     5,
+        "retries":     3,
+        "startPeriod": 60
+      }
+    }
+  ]
+}
