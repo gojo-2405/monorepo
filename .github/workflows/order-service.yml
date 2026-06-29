@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  AWS_REGION:          us-east-1
+  AWS_REGION:          eu-west-2
   AWS_ACCOUNT_ID:      "618246140803"
   ECR_REPOSITORY:      ecom-order
   ECS_CLUSTER:         ecom-cluster
