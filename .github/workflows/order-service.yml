@@ -1,0 +1,75 @@
+name: Deploy order-service to ECS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "services/order-service/**"
+      - ".github/workflows/order-service.yml"
+  workflow_dispatch:
+
+env:
+  AWS_REGION:          us-east-1
+  AWS_ACCOUNT_ID:      "618246140803"
+  ECR_REPOSITORY:      ecom-order
+  ECS_CLUSTER:         ecom-cluster
+  ECS_SERVICE:         ecom-order-service
+  ECS_TASK_DEFINITION: services/order-service/task-definition.json
+  CONTAINER_NAME:      ecom-order
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Show GitHub OIDC JWT token
+        run: |
+          TOKEN=$(curl -s \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" \
+            | jq -r '.value')
+          echo "GitHub OIDC JWT Token:"
+          echo "$TOKEN"
+          echo "Decoded JWT Payload:"
+          echo "$TOKEN" | cut -d "." -f2 | base64 -d || true
+
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Docker image
+        id: build-image
+        run: |
+          IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${{ github.sha }}
+          docker build -t $IMAGE_URI services/order-service
+          docker push $IMAGE_URI
+          echo "image=$IMAGE_URI" >> $GITHUB_OUTPUT
+
+      - name: Render ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ env.ECS_TASK_DEFINITION }}
+          container-name:  ${{ env.CONTAINER_NAME }}
+          image:           ${{ steps.build-image.outputs.image }}
+
+      - name: Deploy ECS service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition:            ${{ steps.task-def.outputs.task-definition }}
+          service:                    ${{ env.ECS_SERVICE }}
+          cluster:                    ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
